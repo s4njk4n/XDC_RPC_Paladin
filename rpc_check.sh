@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Check if sudo is required
-if [[ $EUID -ne 0 ]]; then
+if [ "$(id -u)" -ne 0 ]; then
     SUDO="sudo"
 fi
 
@@ -10,40 +10,46 @@ source settings.txt
 
 # Function to send email
 send_email() {
-    local subject="$1"
-    local body="$2"
-    local to_address="$3"
-    local from_address="RPC_Alert_${RPC_IP}"
+    local subject=$1
+    local body=$2
 
-    $SUDO bash -c "echo -e \"Subject:${subject}\nFrom:${from_address}\n${body}\" | /usr/sbin/sendmail -t ${to_address}"
+    echo -e "$body" | $SUDO mail -s "$subject" "$ALERT_EMAIL"
 }
 
-# Function to log results
-log_result() {
-    local result="$1"
-    local timestamp=$(date +"%Y-%m-%d %H:%M:%S")
+# Check if an alert email was sent in the last hour
+is_alert_sent() {
+    local log_file="rpc_check.log"
 
-    echo "[${timestamp}] ${result}" >> rpc_check.log
+    if [ -f "$log_file" ]; then
+        local last_hour=$(date -d '1 hour ago' '+%Y-%m-%d %H:%M:%S')
+
+        if grep -q "$last_hour" "$log_file"; then
+            return 0
+        fi
+    fi
+
+    return 1
 }
 
-# Check if an alert email was already sent within the last hour
-last_email_time=$(grep "RPC_Alert_" rpc_check.log | tail -1 | awk '{print $2" "$3}')
-last_email_timestamp=$(date -d "${last_email_time}" +"%s")
-current_timestamp=$(date +"%s")
-time_diff=$((current_timestamp - last_email_timestamp))
-if [[ $time_diff -lt 3600 ]]; then
-    log_result "Alert email already sent within the last hour. Skipping..."
-    exit 0
-fi
+# Perform HTTP HEAD request and check response
+response=$(timeout 10s curl -s -I "$RPC_URL")
 
-# Send HTTP HEAD request to RPC port
-response_code=$(curl -o /dev/null -s -w "%{http_code}" --connect-timeout 10 "${RPC_URL}")
-if [[ $response_code -eq 200 ]]; then
-    log_result "RPC is working fine."
+if [ $? -eq 0 ]; then
+    if [[ $response == *"200 OK"* ]]; then
+        echo "$(date '+%Y-%m-%d %H:%M:%S') - RPC check successful" >>rpc_check.log
+    else
+        if ! is_alert_sent; then
+            subject="RPC Alert - $RPC_URL"
+            body="No appropriate response from $RPC_URL"
+            send_email "$subject" "$body"
+            echo "$(date '+%Y-%m-%d %H:%M:%S') - Alert email sent" >>rpc_check.log
+        fi
+    fi
 else
-    log_result "RPC is not responding. Sending alert email..."
-    email_subject="RPC Alert - ${RPC_IP}"
-    email_body="The RPC at ${RPC_URL} is not responding."
-
-    send_email "${email_subject}" "${email_body}" "${ALERT_EMAIL}"
+    if ! is_alert_sent; then
+        subject="RPC Alert - $RPC_URL"
+        body="Error connecting to $RPC_URL"
+        send_email "$subject" "$body"
+        echo "$(date '+%Y-%m-%d %H:%M:%S') - Alert email sent" >>rpc_check.log
+    fi
 fi
