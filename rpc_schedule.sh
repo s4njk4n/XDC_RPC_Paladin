@@ -1,41 +1,36 @@
 #!/bin/bash
 
-# Check if running as root, otherwise run with sudo
+# Check if sudo is required
 if [[ $EUID -ne 0 ]]; then
     SUDO="sudo"
 fi
 
-# Function to start rpc_check.sh as a background process
-start_rpc_check() {
-    $SUDO chmod +x ~/XDC_RPC_Check/rpc_check.sh
-    $SUDO nohup ~/XDC_RPC_Check/rpc_check.sh >/dev/null 2>&1 &
-    echo "rpc_check.sh started running once per minute."
+# Function to set up cron job
+setup_cron() {
+    $SUDO crontab -l | { cat; echo "* * * * * ~/XDC_RPC_Check/rpc_check.sh >> ~/XDC_RPC_Check/rpc_check.log 2>&1 &"; } | $SUDO crontab -
+    echo "Cron job set up successfully."
 }
 
-# Function to stop rpc_check.sh background process
-stop_rpc_check() {
-    $SUDO pkill -f "rpc_check.sh"
-    echo "rpc_check.sh stopped running."
+# Function to cancel cron job
+cancel_cron() {
+    $SUDO crontab -l | grep -v "~/XDC_RPC_Check/rpc_check.sh" | $SUDO crontab -
+    echo "Cron job canceled successfully."
 }
 
 # Interactive menu
-while true; do
-    echo "Please select an option:"
-    echo "1. Start running rpc_check.sh once per minute"
-    echo "2. Stop running rpc_check.sh"
-    read -p "Enter your choice (1 or 2): " choice
+echo "RPC Schedule"
+echo "1. Set up minutely RPC check"
+echo "2. Cancel minutely RPC check"
+read -p "Enter your choice (1-2): " choice
 
-    case $choice in
+case $choice in
     1)
-        start_rpc_check
-        break
+        setup_cron
         ;;
     2)
-        stop_rpc_check
-        break
+        cancel_cron
         ;;
     *)
-        echo "Invalid choice. Please try again."
+        echo "Invalid choice. Exiting..."
         ;;
-    esac
-done
+esac
