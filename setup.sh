@@ -34,3 +34,4 @@ echo "RPC_URL=$RPC_URL" >> "$(dirname "$0")/settings.txt"
 
 # Create rpc_check.log file
 touch "$(dirname "$0")/rpc_check.log"
+
