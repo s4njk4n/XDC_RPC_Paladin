@@ -5,7 +5,7 @@ SMTP_PORT="25"
 
 # Function to install dependencies
 install_dependencies() {
-    echo "Installing curl..."
+    echo "Installing curl and ufw..."
     sudo apt-get update
     sudo apt-get install -y curl ufw
 }
