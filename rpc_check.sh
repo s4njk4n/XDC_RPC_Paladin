@@ -21,11 +21,11 @@ send_alert_email() {
 
 # Function to perform RPC check
 perform_rpc_check() {
-    # Perform HTTP request to RPC and capture the response
-    response=$(curl -s -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' "http://$RPC_IP_ADDRESS:8989")
+    # Perform HTTP HEAD request to RPC and capture the response
+    response=$(curl -s -I --connect-timeout 5 "http://$RPC_IP_ADDRESS:8989")
 
     # Check if the response is correct
-    if [[ $response == *"result"* ]]; then
+    if [[ $response == *"200 OK"* ]]; then
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] RPC is working fine."
     else
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] RPC is not responding properly. Sending alert email..."
@@ -40,4 +40,3 @@ echo "Running rpc_check.sh..."
 perform_rpc_check >> "$LOG_FILE"
 
 echo "RPC check completed."
-
