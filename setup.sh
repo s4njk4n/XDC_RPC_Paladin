@@ -1,47 +1,36 @@
 #!/bin/bash
 
-MAIL_SETTINGS_FILE="mail_settings.txt"
-SMTP_PORT="25"
+# Install dependencies
+echo "Installing dependencies..."
+apt update
+apt install -y curl ssmtp
 
-# Function to install dependencies
-install_dependencies() {
-    echo "Installing curl and ufw..."
-    sudo apt-get update
-    sudo apt-get install -y curl ufw
-}
+# Install local mail service (Postfix)
+echo "Installing local mail service..."
+DEBIAN_FRONTEND=noninteractive apt install -y postfix
 
-# Function to configure SMTP and Postfix using mail settings file
-configure_email() {
-    echo "Configuring SMTP and Postfix..."
+# Install ufw
+echo "Installing ufw..."
+apt install -y ufw
 
-    # Install and configure SMTP and Postfix
-    echo "Installing and configuring SMTP and Postfix..."
-    sudo debconf-set-selections <<< "postfix postfix/mailname string $rpc_ip_address"
-    sudo debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Internet Site'"
-    sudo apt-get install -y postfix mailutils
+# Configure local mail service
+echo "Configuring local mail service..."
+sed -i 's/inet_interfaces = all/inet_interfaces = loopback-only/' /etc/postfix/main.cf
+service postfix restart
 
-    # Use local SMTP server settings
-    smtp_host="localhost"
+# Configure ufw to allow only local access to mail service
+echo "Configuring ufw..."
+ufw allow from 127.0.0.1 to any port 25
+ufw enable
 
-    # Save the mail settings to the file
-    echo "SMTP_HOST=$smtp_host" > "$MAIL_SETTINGS_FILE"
-    echo "SMTP_PORT=$SMTP_PORT" >> "$MAIL_SETTINGS_FILE"
-    echo "RPC_IP_ADDRESS=$rpc_ip_address" >> "$MAIL_SETTINGS_FILE"
-    echo "EMAIL_ADDRESS_TO=$email_address_to" >> "$MAIL_SETTINGS_FILE"
+# User input: RPC server IP address
+read -p "Enter the RPC server IP address: " rpc_server_ip
 
-    # Configure firewall to block external access to SMTP port
-    sudo ufw deny "$SMTP_PORT"
-}
+# User input: Email address for alerts
+read -p "Enter the email address for alerts: " email_address
 
-# Main script
-echo "Running setup.sh..."
-install_dependencies
+# Store user-defined data fields in settings.txt
+echo "rpc_server_ip=$rpc_server_ip" > settings.txt
+echo "email_address=$email_address" >> settings.txt
 
-# Set up IP address of the RPC server
-read -p "Enter the IP address of the RPC server: " rpc_ip_address
-echo
-
-configure_email
-
-echo "Setup completed successfully."
-
+echo "Setup completed successfully!"
