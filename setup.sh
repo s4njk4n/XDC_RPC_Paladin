@@ -7,7 +7,7 @@ SMTP_PORT="25"
 install_dependencies() {
     echo "Installing curl..."
     sudo apt-get update
-    sudo apt-get install -y curl
+    sudo apt-get install -y curl ufw
 }
 
 # Function to configure SMTP and Postfix using mail settings file
