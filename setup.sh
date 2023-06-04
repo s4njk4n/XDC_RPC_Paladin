@@ -33,4 +33,6 @@ read -p "Enter the email address for alerts: " email_address
 echo "rpc_server_ip=$rpc_server_ip" > settings.txt
 echo "email_address=$email_address" >> settings.txt
 
+touch rpc_check.log
+
 echo "Setup completed successfully!"
