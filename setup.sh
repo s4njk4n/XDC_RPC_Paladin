@@ -24,13 +24,10 @@ $SUDO ufw allow from 127.0.0.1 to any port 25
 $SUDO ufw deny from any to any port 25
 $SUDO ufw --force enable
 
-# Ask user for email address and RPC URL
-read -p "Enter the email address to receive alert emails: " ALERT_EMAIL
-read -p "Enter the RPC URL to check: " RPC_URL
-
-# Store user-defined data in settings.txt file
-echo "ALERT_EMAIL=$ALERT_EMAIL" > "$(dirname "$0")/settings.txt"
-echo "RPC_URL=$RPC_URL" >> "$(dirname "$0")/settings.txt"
-
 # Create rpc_check.log file
 touch "$(dirname "$0")/rpc_check.log"
+
+# Execute set_params.sh
+SCRIPT_DIR=$(dirname "$0")
+"$SCRIPT_DIR/set_params.sh"
+
