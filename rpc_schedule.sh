@@ -31,8 +31,12 @@ while true; do
                 # Add entry to crontab to run rpc_check.sh every minute
                 $SUDO sh -c "echo '* * * * * /bin/bash $(dirname "$0")/rpc_check.sh >> $(dirname "$0")/rpc_check.log' >> /etc/crontab"
                 echo "RPC check scheduled to run every minute."
+                break
             else
-                echo "No crontab exists. Please create one using 'crontab -e' command."
+                # Create crontab and add the entry to run rpc_check.sh every minute
+                echo "* * * * * /bin/bash $(dirname "$0")/rpc_check.sh >> $(dirname "$0")/rpc_check.log" | $SUDO crontab -
+                echo "Crontab created and RPC check scheduled to run every minute."
+                break
             fi
             ;;
         2)
@@ -41,8 +45,10 @@ while true; do
                 # Remove entry from crontab that runs rpc_check.sh every minute
                 $SUDO sed -i '/rpc_check.sh/d' /etc/crontab
                 echo "RPC check scheduling canceled."
+                break
             else
                 echo "No crontab exists."
+                break
             fi
             ;;
         3)
