@@ -32,8 +32,8 @@ send_email() {
 # Send HTTP HEAD request and check response
 response=$(timeout 10 curl --silent --head "$RPC_URL" | grep "200 OK")
 if [ -z "$response" ]; then
-    send_email "RPC Check Alert" "The RPC at $RPC_URL is not responding correctly."
     echo "$(date '+%Y-%m-%d %H:%M:%S') ALERT: RPC check failed for $RPC_URL" >> rpc_check.log
+    send_email "RPC Check Alert" "The RPC at $RPC_URL is not responding correctly."
 else
     echo "$(date '+%Y-%m-%d %H:%M:%S') INFO: RPC check successful for $RPC_URL" >> rpc_check.log
 fi
